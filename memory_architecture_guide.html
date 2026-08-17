@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab 17 - Multi-Memory Agent Architecture & Logic Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #090d16;
+      --bg-secondary: #0f172a;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --bg-glass: rgba(15, 23, 42, 0.75);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(99, 102, 241, 0.3);
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+
+      --accent-indigo: #6366f1;
+      --accent-purple: #8b5cf6;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      
+      --gradient-brand: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+      --gradient-cyan: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+      --gradient-emerald: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      --gradient-amber: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      line-height: 1.6;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(at 10% 10%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+        radial-gradient(at 90% 20%, rgba(217, 70, 239, 0.1) 0px, transparent 50%),
+        radial-gradient(at 50% 80%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 50px;
+      padding: 40px 20px;
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--gradient-brand);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 750px;
+      margin: 0 auto;
+    }
+
+    /* Navigation Bar */
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+
+    .nav-tab {
+      padding: 10px 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-main);
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .nav-tab.active {
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      border-color: var(--accent-indigo);
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Sections */
+    .section-content {
+      display: none;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    .section-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #f1f5f9;
+    }
+
+    h2 .icon {
+      font-size: 1.5rem;
+    }
+
+    /* Cards & Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 24px;
+      margin-bottom: 30px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-glow);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Memory Types Themes */
+    .theme-short .card-badge { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); }
+    .theme-long .card-badge { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); }
+    .theme-episodic .card-badge { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .theme-semantic .card-badge { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    /* Architecture Flow Diagram */
+    .flow-diagram {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 30px;
+      margin-bottom: 35px;
+      position: relative;
+    }
+
+    .diagram-step {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .step-number {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--accent-indigo);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
+    .step-body h4 {
+      font-size: 1.05rem;
+      color: #f1f5f9;
+      margin-bottom: 4px;
+    }
+
+    .step-body p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    /* Code Blocks */
+    .code-box {
+      background: #060913;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      margin: 16px 0;
+      overflow: hidden;
+      font-family: 'Fira Code', monospace;
+    }
+
+    .code-box-header {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.8rem;
+      color: var(--text-subtle);
+    }
+
+    pre {
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      line-height: 1.55;
+    }
+
+    .keyword { color: #f43f5e; font-weight: 600; }
+    .func { color: #38bdf8; }
+    .string { color: #4ade80; }
+    .comment { color: #64748b; font-style: italic; }
+    .param { color: #fbbf24; }
+
+    /* Tables */
+    .custom-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      background: var(--bg-glass);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    .custom-table th {
+      background: rgba(30, 41, 59, 0.9);
+      padding: 14px 18px;
+      text-align: left;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .custom-table td {
+      padding: 14px 18px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .custom-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-main);
+    }
+
+    .highlight-pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      font-family: 'Fira Code', monospace;
+    }
+
+    .pill-cyan { background: rgba(6, 182, 212, 0.15); color: #38bdf8; }
+    .pill-purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+    .pill-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .pill-emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+
+    /* Interactive Accordion */
+    .accordion-item {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+      background: var(--bg-card);
+      overflow: hidden;
+    }
+
+    .accordion-header {
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 600;
+      color: #f1f5f9;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .accordion-header:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .accordion-content {
+      padding: 0 20px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+    }
+
+    .accordion-item.open .accordion-content {
+      padding: 16px 20px;
+      max-height: 600px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .accordion-item.open .accordion-icon {
+      transform: rotate(180deg);
+    }
+
+    .accordion-icon {
+      transition: transform 0.3s ease;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      margin-top: 60px;
+      padding-top: 30px;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-subtle);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 20px 14px; }
+      h1 { font-size: 2rem; }
+      .grid-2, .grid-4 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- HEADER -->
+    <header>
+      <div class="badge">🧠 VinUni AI Agents Lab 17</div>
+      <h1>Multi-Memory Architecture & Logic Guide</h1>
+      <p class="subtitle">Tài liệu trực quan giải thích toàn diện các khái niệm, cơ chế 4 tầng nhớ, luồng xử lý và logic code đã hoàn thiện trong bài lab.</p>
+    </header>
+
+    </div>
+
+    <!-- NAVIGATION TABS -->
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('overview')">📌 1. Tổng quan 4 Tầng nhớ</button>
+      <button class="nav-tab" onclick="switchTab('logic')">⚡ 2. Giải thích 4 Hàm Code</button>
+      <button class="nav-tab" onclick="switchTab('shortterm')">🔄 3. Cơ chế Compaction</button>
+      <button class="nav-tab" onclick="switchTab('principles')">🛡️ 4. Nguyên lý & Token Budget</button>
+      <button class="nav-tab" onclick="switchTab('workflow')">🚀 5. Quy trình Chạy & Đánh giá</button>
+      <button class="nav-tab" onclick="switchTab('tests')">🧪 6. File Test & Điều kiện PASS/FAIL</button>
+      <button class="nav-tab" onclick="switchTab('ingest')">📥 7. Cách đưa dữ liệu vào Memory</button>
+    </div>
+
+    <!-- TAB 1: TỔNG QUAN 4 TẦNG NHỚ -->
+    <div id="overview" class="section-content active">
+      <h2><span class="icon">🏛️</span> 4 Tầng Nhớ của Agentic Memory System</h2>
+      
+      <div class="grid-4">
+        <!-- 1. Short Term -->
+        <div class="card theme-short">
+          <div class="card-header">
+            <span class="card-title">💬 Short-Term</span>
+            <span class="card-badge">Working Memory</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px;">
+            Vùng nhớ nóng cục bộ của phiên hội thoại hiện tại. Nhanh nhưng giới hạn token.
+          </p>
+          <ul style="font-size: 0.82rem; color: var(--text-subtle); padding-left: 18px;">
+            <li><strong>Lưu trữ:</strong> In-memory (Sliding Window)</li>
+            <li><strong>Mục đích:</strong> Hiểu ngữ cảnh các turn chat gần nhất ("nó", "điều đó").</li>
+            <li><strong>Xử lý áp lực:</strong> Compaction + Durable Notes khi vượt ngưỡng.</li>
+          </ul>
+        </div>
+
+        <!-- 2. Long Term -->
+        <div class="card theme-long">
+          <div class="card-header">
+            <span class="card-title">👤 Long-Term</span>
+            <span class="card-badge">Declarative</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px;">
+            Trí nhớ dài hạn bền vững qua nhiều session/thread của từng người dùng cụ thể.
+          </p>
+          <ul style="font-size: 0.82rem; color: var(--text-subtle); padding-left: 18px;">
+            <li><strong>Lưu trữ:</strong> Zep User Knowledge Graph</li>
+            <li><strong>Mục đích:</strong> Nhớ preferences, decisions, open loops/TODOs.</li>
+            <li><strong>Đặc tính:</strong> Recency Wins (ưu tiên sở thích mới cập nhật).</li>
+          </ul>
+        </div>
+
+        <!-- 3. Episodic -->
+        <div class="card theme-episodic">
+          <div class="card-header">
+            <span class="card-title">📖 Episodic</span>
+            <span class="card-badge">Experience</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px;">
+            Lưu vết các quỹ đạo thử nghiệm và kết quả: <em>"lần trước đã làm gì và được gì"</em>.
+          </p>
+          <ul style="font-size: 0.82rem; color: var(--text-subtle); padding-left: 18px;">
+            <li><strong>Lưu trữ:</strong> Zep User Graph (Scope: Episodes)</li>
+            <li><strong>Mục đích:</strong> Tránh lặp lại lỗi, tái sử dụng giải pháp đã kiểm chứng.</li>
+            <li><strong>Ví dụ:</strong> "Đã thử tăng timeout nhưng fail, connection pool mới work".</li>
+          </ul>
+        </div>
+
+        <!-- 4. Semantic -->
+        <div class="card theme-semantic">
+          <div class="card-header">
+            <span class="card-title">📚 Semantic</span>
+            <span class="card-badge">Domain KB</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px;">
+            Tri thức miền, quy tắc nghiệp vụ, tài liệu dùng chung toàn hệ thống (không của riêng user nào).
+          </p>
+          <ul style="font-size: 0.82rem; color: var(--text-subtle); padding-left: 18px;">
+            <li><strong>Lưu trữ:</strong> Standalone Graph (graph_id chung)</li>
+            <li><strong>Mục đích:</strong> Tra cứu tài liệu, mã quy tắc (e.g. PAYMENT-RULE-3).</li>
+            <li><strong>Phạm vi:</strong> Toàn cục (Global), không theo user_id.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Comparison Table -->
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Tầng Nhớ</th>
+            <th>Vị Trí Lưu Trữ</th>
+            <th>Khóa Định Danh</th>
+            <th>Ví Dụ Nội Dung</th>
+            <th>Tỉ Lệ Token Budget</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="highlight-pill pill-cyan">Short-term</span></td>
+            <td>In-memory local (Python)</td>
+            <td><code>session_id</code></td>
+            <td>4-6 tin nhắn gần nhất + Durable constraints</td>
+            <td><strong>10%</strong> (800 tokens)</td>
+          </tr>
+          <tr>
+            <td><span class="highlight-pill pill-purple">Long-term</span></td>
+            <td>Zep User Graph</td>
+            <td><code>user_id + thread_id</code></td>
+            <td>User đổi từ Python sang TypeScript, deadline 16:00</td>
+            <td><strong>4%</strong> (320 tokens)</td>
+          </tr>
+          <tr>
+            <td><span class="highlight-pill pill-amber">Episodic</span></td>
+            <td>Zep Episodes</td>
+            <td><code>user_id</code></td>
+            <td>Tried action, failed timeout, fixed with aiohttp session</td>
+            <td><strong>3%</strong> (240 tokens)</td>
+          </tr>
+          <tr>
+            <td><span class="highlight-pill pill-emerald">Semantic</span></td>
+            <td>Zep Standalone Graph</td>
+            <td><code>graph_id</code> (chung)</td>
+            <td>Quy tắc retry payment: 3 lần, exponential-backoff</td>
+            <td><strong>3%</strong> (240 tokens)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TAB 2: GIẢI THÍCH 4 HÀM CODE -->
+    <div id="logic" class="section-content">
+      <h2><span class="icon">⚡</span> Giải Thích Chi Tiết 4 Hàm trong <code>src/memory_student.py</code></h2>
+      
+      <div class="accordion-item open">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <span>1. <code>retrieve_long_term(self, user_id, thread_id, query)</code></span>
+          <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content">
+          <p><strong>Mục đích:</strong> Lấy Zep Context Block (tổng hợp facts & user state phù hợp nhất với query hiện tại) + trích xuất facts với mốc thời gian/validity range.</p>
+          <div class="code-box">
+            <div class="code-box-header"><span>src/memory_student.py</span><span>Python 3.12</span></div>
+            <pre><code><span class="keyword">def</span> <span class="func">retrieve_long_term</span>(<span class="param">self</span>, user_id: <span class="func">str</span>, thread_id: <span class="func">str</span>, query: <span class="func">str</span>) -> <span class="func">str</span>:
+    <span class="comment"># 1. Nạp query vào thread slice để Zep tính toán mức độ liên quan</span>
+    prime_eval_thread(<span class="param">self</span>.client, user_id, thread_id, query)
+    
+    <span class="comment"># 2. Lấy Context Block đã được Zep tổng hợp</span>
+    user_context = <span class="param">self</span>.client.thread.get_user_context(thread_id=thread_id)
+    context_block = <span class="func">getattr</span>(user_context, <span class="string">"context"</span>, <span class="string">""</span>) <span class="keyword">or</span> <span class="string">""</span>
+
+    <span class="comment"># 3. Tìm kiếm thêm các Facts trong Graph (scope='edges') để lấy validity range/audit</span>
+    <span class="keyword">try</span>:
+        facts = <span class="param">self</span>.client.graph.search(
+            user_id=user_id,
+            query=cap_query(query),
+            scope=<span class="string">"edges"</span>,
+            limit=20,
+        )
+        fact_text = render_graph_search(facts)
+    <span class="keyword">except</span> <span class="func">Exception</span>:
+        fact_text = <span class="string">""</span>
+        
+    <span class="comment"># 4. Ghép kết quả Context Block và Fact text</span>
+    <span class="keyword">return</span> join_nonempty([context_block, fact_text], sep=<span class="string">"\n\n"</span>)</code></pre>
+          </div>
+          <p><strong>Điểm mấu chốt:</strong> Dùng <code>prime_eval_thread</code> trước để Zep Context Block nhận biết câu hỏi hiện tại, từ đó trả về facts có liên quan cao nhất.</p>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <span>2. <code>retrieve_episodic(self, user_id, query)</code></span>
+          <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content">
+          <p><strong>Mục đích:</strong> Truy vấn các bài học/kinh nghiệm trong quá khứ đã được nạp dưới dạng episodes của user.</p>
+          <div class="code-box">
+            <div class="code-box-header"><span>src/memory_student.py</span><span>Python 3.12</span></div>
+            <pre><code><span class="keyword">def</span> <span class="func">retrieve_episodic</span>(<span class="param">self</span>, user_id: <span class="func">str</span>, query: <span class="func">str</span>) -> <span class="func">str</span>:
+    <span class="comment"># Tìm kiếm theo user_id với scope="episodes"</span>
+    results = <span class="param">self</span>.client.graph.search(
+        user_id=user_id,
+        query=cap_query(query),
+        scope=<span class="string">"episodes"</span>,
+        limit=15,
+    )
+    <span class="comment"># Cắt gọn độ dài mỗi episode (180 ký tự) để không vượt budget</span>
+    <span class="keyword">return</span> render_graph_search(results, episode_char_cap=180)</code></pre>
+          </div>
+          <p><strong>Điểm mấu chốt:</strong> Dùng <code>episode_char_cap=180</code> giúp giữ được nhiều episodes riêng biệt hơn trong ngân sách token eo hẹp.</p>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <span>3. <code>retrieve_semantic(self, graph_id, query)</code></span>
+          <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content">
+          <p><strong>Mục đích:</strong> Tra cứu tài liệu và quy tắc kỹ thuật chung trên Knowledge Graph độc lập (không dính đến bất kỳ user nào).</p>
+          <div class="code-box">
+            <div class="code-box-header"><span>src/memory_student.py</span><span>Python 3.12</span></div>
+            <pre><code><span class="keyword">def</span> <span class="func">retrieve_semantic</span>(<span class="param">self</span>, graph_id: <span class="func">str</span>, query: <span class="func">str</span>) -> <span class="func">str</span>:
+    q = cap_query(query)
+    <span class="keyword">try</span>:
+        <span class="comment"># scope="episodes" giữ nguyên các mã code literal như PAYMENT-RULE-3</span>
+        results = <span class="param">self</span>.client.graph.search(
+            graph_id=graph_id,
+            query=q,
+            scope=<span class="string">"episodes"</span>,
+            limit=8,
+        )
+    <span class="keyword">except</span> <span class="func">Exception</span>:
+        <span class="comment"># Fallback sang nodes nếu SDK/account không hỗ trợ episodes trên standalone graph</span>
+        results = <span class="param">self</span>.client.graph.search(
+            graph_id=graph_id,
+            query=q,
+            scope=<span class="string">"nodes"</span>,
+            limit=8,
+        )
+    <span class="keyword">return</span> render_graph_search(results)</code></pre>
+          </div>
+          <p><strong>Lưu ý:</strong> Phải truyền <code>graph_id</code> (ví dụ: <code>vinuni-lab17-domain-kb</code>), <strong>tuyệt đối không</strong> truyền <code>user_id</code> vào hàm này.</p>
+        </div>
+      </div>
+
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <span>4. <code>assemble_context(self, layers)</code></span>
+          <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content">
+          <p><strong>Mục đích:</strong> Cắt gọn dữ liệu theo ngân sách token từng tầng (10%/4%/3%/3%) và ghép lại thành prompt hoàn chỉnh theo thứ tự ưu tiên.</p>
+          <div class="code-box">
+            <div class="code-box-header"><span>src/memory_student.py</span><span>Python 3.12</span></div>
+            <pre><code><span class="keyword">def</span> <span class="func">assemble_context</span>(<span class="param">self</span>, layers: <span class="func">dict</span>[<span class="func">str</span>, <span class="func">str</span>]) -> <span class="func">tuple</span>[<span class="func">str</span>, <span class="func">dict</span>[<span class="func">str</span>, <span class="func">dict</span>[<span class="func">str</span>, <span class="func">int</span>]]]:
+    <span class="comment"># Ủy quyền cho ContextBudgetManager xử lý ngân sách và ghép thứ tự ưu tiên</span>
+    <span class="keyword">return</span> <span class="param">self</span>.budget.assemble(layers)</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: COMPACTION -->
+    <div id="shortterm" class="section-content">
+      <h2><span class="icon">🔄</span> Cơ Chế Short-Term Memory & Compaction</h2>
+      
+      <div class="flow-diagram">
+        <div class="diagram-step">
+          <div class="step-number">1</div>
+          <div class="step-body">
+            <h4>Nhận tin nhắn mới (Chat Turn)</h4>
+            <p>Tin nhắn mới được thêm vào danh sách <code>messages</code> trong <code>ShortTermMemory</code>.</p>
+          </div>
+        </div>
+        
+        <div class="diagram-step">
+          <div class="step-number">2</div>
+          <div class="step-body">
+            <h4>Phát hiện áp lực bộ nhớ (Detect Pressure)</h4>
+            <p>Kiểm tra: Số lượng tin nhắn > <code>max_recent_messages (6)</code> HOẶC Tổng token > <code>pressure_tokens (500)</code>.</p>
+          </div>
+        </div>
+
+        <div class="diagram-step">
+          <div class="step-number">3</div>
+          <div class="step-body">
+            <h4>Trích xuất ghi chú bền vững (Durable Notes Extraction)</h4>
+            <p>Quét các từ khóa bắt buộc (<code>deadline, todo, constraint, must, REVIEW-DEADLINE-1600</code>) từ các tin nhắn cũ sắp bị xóa để lưu riêng vào <code>durable_notes</code>.</p>
+          </div>
+        </div>
+
+        <div class="diagram-step">
+          <div class="step-number">4</div>
+          <div class="step-body">
+            <h4>Tóm tắt & Cắt trượt (Sliding Window Compaction)</h4>
+            <p>Nén các turn cũ thành đoạn tóm tắt ngắn + giữ nguyên K tin nhắn gần nhất + đính kèm Durable Notes.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4 style="color: #38bdf8; margin-bottom: 8px;">💡 Tại sao không dùng Buffer đơn thuần?</h4>
+        <p style="color: var(--text-muted); font-size: 0.92rem;">
+          Nếu chỉ dùng <strong>Buffer</strong> (lưu toàn bộ chat history), số lượng token sẽ tăng tuyến tính, làm tràn context window của LLM và gây nhiễu context. Kỹ thuật <strong>Sliding Window + Compaction</strong> giúp bảo tồn 100% các ràng buộc quan trọng (constraints/deadlines) trong khi giữ lượng token luôn ổn định dưới ngưỡng cho phép.
+        </p>
+      </div>
+    </div>
+
+    <!-- TAB 4: NGUYÊN LÝ & TOKEN BUDGET -->
+    <div id="principles" class="section-content">
+      <h2><span class="icon">🛡️</span> Các Nguyên Lý Cốt Lõi & Phân Bổ Ngân Sách</h2>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🕒 Recency Wins (Xử lý xung đột)</span>
+          </div>
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">
+            Khi người dùng thay đổi quyết định hoặc sở thích (ví dụ: ban đầu chọn <code>Python</code>, sau đó chuyển sang <code>TypeScript + NestJS</code> cho dự án <code>BLUEBIRD-42</code>):
+          </p>
+          <ul style="font-size: 0.85rem; color: var(--text-subtle); padding-left: 18px;">
+            <li>Hệ thống ưu tiên thông tin mới nhất cho câu trả lời hiện tại.</li>
+            <li>Dữ liệu cũ vẫn được lưu trữ kèm timestamp/provenance trong Graph để tra cứu lịch sử khi cần.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🔒 User Isolation & Privacy</span>
+          </div>
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">
+            Đảm bảo tính cô lập dữ liệu tuyệt đối giữa các người dùng:
+          </p>
+          <ul style="font-size: 0.85rem; color: var(--text-subtle); padding-left: 18px;">
+            <li>Truy vấn của <code>lan-lab17</code> không bao giờ được trả về facts của <code>minh-lab17</code> (tránh data-leak bug).</li>
+            <li><strong>Right to be forgotten:</strong> Lệnh <code>src.forget</code> cho phép xóa hoàn toàn dữ liệu của một user mà không ảnh hưởng người khác.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Token Budget Box -->
+      <div class="card" style="border-color: rgba(99, 102, 241, 0.4);">
+        <h3 style="margin-bottom: 12px; color: #a5b4fc;">📊 Phân Bổ Token Budget (Dựa trên context 8,000 tokens)</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+          Thứ tự ưu tiên ghép ngữ cảnh (Priority Order): <strong>Short-term > Long-term > Episodic > Semantic</strong>.
+        </p>
+        <div style="display: flex; height: 28px; border-radius: 8px; overflow: hidden; margin-bottom: 14px;">
+          <div style="width: 50%; background: var(--accent-cyan); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #000;">Short-Term (10% - 800 tok)</div>
+          <div style="width: 20%; background: var(--accent-indigo); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff;">Long-Term (4% - 320 tok)</div>
+          <div style="width: 15%; background: var(--accent-amber); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #000;">Episodic (3% - 240)</div>
+          <div style="width: 15%; background: var(--accent-emerald); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #000;">Semantic (3% - 240)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: WORKFLOW -->
+    <div id="workflow" class="section-content">
+      <h2><span class="icon">🚀</span> Quy Trình Thực Hiện & Kiểm Thử Trên Terminal</h2>
+      
+      <div class="flow-diagram">
+        <div class="diagram-step">
+          <div class="step-number">1</div>
+          <div class="step-body">
+            <h4>Bật Redis & Qdrant nền</h4>
+            <div class="code-box"><pre><code>docker compose up -d redis qdrant</code></pre></div>
+          </div>
+        </div>
+
+        <div class="diagram-step">
+          <div class="step-number">2</div>
+          <div class="step-body">
+            <h4>Kiểm tra kết nối (Smoke Test)</h4>
+            <div class="code-box"><pre><code>docker compose run --rm app python -m src.smoke</code></pre></div>
+          </div>
+        </div>
+
+        <div class="diagram-step">
+          <div class="step-number">3</div>
+          <div class="step-body">
+            <h4>Nạp dữ liệu mẫu lên Zep Cloud (Seed)</h4>
+            <div class="code-box"><pre><code>docker compose run --rm app python -m src.seed</code></pre></div>
+          </div>
+        </div>
+
+        <div class="diagram-step">
+          <div class="step-number">4</div>
+          <div class="step-body">
+            <h4>Chạy Benchmark Đánh Giá Code Học Viên</h4>
+            <div class="code-box"><pre><code>docker compose run --rm app python -m src.evaluate --impl student --reuse-seeded</code></pre></div>
+            <p style="color: #4ade80;">Yêu cầu: Đạt tối thiểu 9/11 PASS (>= 80%) các case E01 - E11.</p>
+          </div>
+        </div>
+
+        <div class="diagram-step">
+          <div class="step-number">5</div>
+          <div class="step-body">
+            <h4>Chạy Baseline không có Memory & Xuất Báo Cáo So Sánh</h4>
+            <div class="code-box"><pre><code>docker compose run --rm app python -m src.evaluate --impl no_memory
+docker compose run --rm app python -m src.compare_reports</code></pre></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: FILE TEST -->
+    <div id="tests" class="section-content">
+      <h2><span class="icon">🧪</span> Hệ Thống File Test — Khi Nào PASS, Khi Nào FAIL?</h2>
+
+      <div class="card" style="margin-bottom: 28px; border-color: rgba(99,102,241,0.3);">
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          Bài lab có <strong>2 loại kiểm thử</strong> hoàn toàn khác nhau:
+          <strong style="color:#a5b4fc">(1) Unit Tests</strong> trong thư mục <code>tests/</code> kiểm tra logic nội bộ bằng <strong>pytest</strong>,
+          và <strong style="color:#34d399">(2) Evaluation Cases</strong> (E01-E11, G01-G20) đánh giá khả năng truy xuất memory qua <strong>Zep Cloud</strong>.
+          Hai loại này hoạt động hoàn toàn độc lập.
+        </p>
+      </div>
+
+      <!-- UNIT TESTS -->
+      <h2 style="font-size:1.4rem; margin-bottom: 20px;"><span class="icon">📁</span> Phần 1 — Unit Tests (<code>tests/*.py</code>)</h2>
+      <p style="color: var(--text-muted); margin-bottom: 24px; font-size:0.93rem;">Chạy bằng lệnh: <code style="background:#060913; padding: 3px 8px; border-radius:4px;">docker compose run --rm app pytest -q</code></p>
+
+      <!-- test_short_term.py -->
+      <div class="accordion-item open">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <span>📄 <code>test_short_term.py</code> — Kiểm tra Short-Term Memory & Compaction</span>
+          <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content">
+          <p style="margin-bottom:14px;">Kiểm tra xem cơ chế <strong>Sliding Window Compaction</strong> có hoạt động đúng không — cụ thể là dù có nhiều turn chat rác vào sau, các <strong>constraint quan trọng vẫn phải được giữ lại</strong> trong Durable Notes.</p>
+
+          <div class="code-box">
+            <div class="code-box-header"><span>test_short_term.py — Test 1: Sliding Compaction</span><span>pytest</span></div>
+            <pre><code><span class="keyword">def</span> <span class="func">test_sliding_compaction_preserves_durable_constraint</span>():
+    memory = <span class="func">ShortTermMemory</span>(strategy=<span class="string">"sliding"</span>, max_recent_messages=4)
+    <span class="comment"># Thêm 1 constraint quan trọng trước</span>
+    memory.add(<span class="string">"user"</span>, <span class="string">"Constraint: REVIEW-DEADLINE-1600 is Friday at 16:00..."</span>)
+    <span class="comment"># Thêm 10 turn chat rác sau đó → kích hoạt compaction</span>
+    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="func">range</span>(10):
+        memory.add(<span class="string">"user"</span>, <span class="string">f"filler turn {i}"</span>)
+    text = memory.render()
+    <span class="comment"># PASS nếu: constraint vẫn còn trong output SAU khi compaction xảy ra</span>
+    <span class="keyword">assert</span> <span class="string">"REVIEW-DEADLINE-1600"</span> <span class="keyword">in</span> text
+    <span class="keyword">assert</span> <span class="string">"Friday"</span> <span class="keyword">in</span> text
+    <span class="keyword">assert</span> <span class="string">"16:00"</span> <span class="keyword">in</span> text
+    <span class="keyword">assert</span> memory.compactions > 0  <span class="comment"># Phải xảy ra ít nhất 1 lần compaction</span></code></pre>
+          </div>
+
+          <table class="custom-table" style="margin-top:14px;">
+            <thead><tr><th>Điều kiện</th><th>Kết quả</th></tr></thead>
+            <tbody>
+              <tr><td>Sau compaction, <code>REVIEW-DEADLINE-1600</code>, <code>Friday</code>, <code>16:00</code> vẫn có trong text</td><td><span style="color:#4ade80">✅ PASS</span></td></tr>
+              <tr><td>Bất kỳ keyword nào bị mất sau khi các turn rác được thêm vào</td><td><span style="color:#f87171">❌ FAIL</span></td></tr>
+              <tr><td><code>compactions == 0</code> (chưa bao giờ compact)</td><td><span style="color:#f87171">❌ FAIL</span></td></tr>
+            </tbody>
+          </table>
+
+          <div class="code-box" style="margin-top:16px;">
+            <div class="code-box-header"><span>test_short_term.py — Test 2: Buffer không được compact</span></div>
+            <pre><code><span class="keyword">def</span> <span class="func">test_buffer_does_not_compact</span>():
+    memory = <span class="func">ShortTermMemory</span>(strategy=<span class="string">"buffer"</span>, max_recent_messages=2)
+    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="func">range</span>(8):
+        memory.add(<span class="string">"user"</span>, <span class="string">f"message {i}"</span>)
+    <span class="comment"># PASS nếu: buffer giữ TẤT CẢ tin nhắn, KHÔNG compact bao giờ</span>
+    <span class="keyword">assert</span> memory.compactions == 0
+    <span class="keyword">assert</span> <span class="string">"message 0"</span> <span class="keyword">in</span> memory.render()</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- test_context_budget.py -->
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <span>📄 <code>test_context_budget.py</code> — Kiểm tra Token Budget 10/4/3/3</span>
+          <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content">
+          <p style="margin-bottom:14px;">Kiểm tra xem <code>ContextBudgetManager</code> có phân bổ token đúng tỉ lệ <strong>10% / 4% / 3% / 3%</strong> không, và có ghép context đúng thứ tự ưu tiên không.</p>
+
+          <div class="code-box">
+            <div class="code-box-header"><span>test_context_budget.py</span></div>
+            <pre><code><span class="keyword">def</span> <span class="func">test_teaching_budget_ratios</span>():
+    manager = <span class="func">ContextBudgetManager</span>(10000)  <span class="comment"># 10,000 tokens tổng</span>
+    <span class="comment"># PASS nếu giới hạn từng layer đúng với tỉ lệ 10/4/3/3</span>
+    <span class="keyword">assert</span> manager.layer_limit(<span class="string">"short_term"</span>) == 1000  <span class="comment"># 10%</span>
+    <span class="keyword">assert</span> manager.layer_limit(<span class="string">"long_term"</span>) == 400   <span class="comment"># 4%</span>
+    <span class="keyword">assert</span> manager.layer_limit(<span class="string">"episodic"</span>) == 300    <span class="comment"># 3%</span>
+    <span class="keyword">assert</span> manager.layer_limit(<span class="string">"semantic"</span>) == 300    <span class="comment"># 3%</span>
+
+<span class="keyword">def</span> <span class="func">test_assemble_preserves_priority_order</span>():
+    manager = <span class="func">ContextBudgetManager</span>(1000)
+    merged, breakdown = manager.assemble({
+        <span class="string">"semantic"</span>: <span class="string">"semantic evidence"</span>,
+        <span class="string">"episodic"</span>: <span class="string">"episode evidence"</span>,
+        <span class="string">"long_term"</span>: <span class="string">"profile evidence"</span>,
+        <span class="string">"short_term"</span>: <span class="string">"recent evidence"</span>,
+    })
+    <span class="comment"># PASS nếu thứ tự trong output: SHORT → LONG → EPISODIC → SEMANTIC</span>
+    <span class="keyword">assert</span> merged.index(<span class="string">"&lt;SHORT_TERM&gt;"</span>) &lt; merged.index(<span class="string">"&lt;LONG_TERM&gt;"</span>)
+    <span class="keyword">assert</span> merged.index(<span class="string">"&lt;LONG_TERM&gt;"</span>) &lt; merged.index(<span class="string">"&lt;EPISODIC&gt;"</span>)
+    <span class="keyword">assert</span> merged.index(<span class="string">"&lt;EPISODIC&gt;"</span>) &lt; merged.index(<span class="string">"&lt;SEMANTIC&gt;"</span>)</code></pre>
+          </div>
+
+          <table class="custom-table" style="margin-top:14px;">
+            <thead><tr><th>Điều kiện</th><th>Kết quả</th></tr></thead>
+            <tbody>
+              <tr><td>Tỉ lệ token chính xác 10%/4%/3%/3% và thứ tự SHORT &gt; LONG &gt; EPISODIC &gt; SEMANTIC</td><td><span style="color:#4ade80">✅ PASS</span></td></tr>
+              <tr><td>Tỉ lệ sai (ví dụ: short_term = 500 thay vì 1000)</td><td><span style="color:#f87171">❌ FAIL</span></td></tr>
+              <tr><td>Thứ tự ghép sai (ví dụ: SEMANTIC xuất hiện trước SHORT_TERM)</td><td><span style="color:#f87171">❌ FAIL</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- test_dataset.py -->
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <span>📄 <code>test_dataset.py</code> — Kiểm tra Dataset, Router & Golden Set</span>
+          <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content">
+          <p style="margin-bottom:14px;">Kiểm tra tính toàn vẹn của dữ liệu lab: dataset có đủ 4 layer không? Router có chọn đúng layer không? Knowledge base có đủ marker không?</p>
+
+          <table class="custom-table">
+            <thead><tr><th>Tên hàm test</th><th>Kiểm tra gì</th><th>PASS khi</th><th>FAIL khi</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><code>test_groundtruth_covers_four_memory_layers</code></td>
+                <td>Dataset <code>sessions.json</code> có đủ 5 loại layer không</td>
+                <td>Có đủ: short_term, long_term, episodic, semantic, mixed; >= 10 case</td>
+                <td>Thiếu bất kỳ layer nào hoặc < 10 case</td>
+              </tr>
+              <tr>
+                <td><code>test_user_isolation_case_exists</code></td>
+                <td>Case E09 thuộc user <code>lan-lab17</code> và phải <strong>không</strong> chứa <code>ORCHID-27</code></td>
+                <td>E09 dùng <code>lan-lab17</code> và <code>must_not_contain</code> có <code>ORCHID-27</code></td>
+                <td>User_id sai hoặc thiếu từ khoá kiểm tra cô lập</td>
+              </tr>
+              <tr>
+                <td><code>test_semantic_markers_exist</code></td>
+                <td><code>knowledge.jsonl</code> chứa các marker <code>PAYMENT-RULE-3</code>, <code>CONN-POOL-FIRST</code></td>
+                <td>Hai marker có trong file knowledge</td>
+                <td>File knowledge bị xóa hoặc thiếu marker</td>
+              </tr>
+              <tr>
+                <td><code>test_router_can_select_multiple_layers</code></td>
+                <td>Router chọn đúng layer cho query hỗn hợp</td>
+                <td>Query về "retry payment + preference" → chọn cả semantic VÀ long_term</td>
+                <td>Router chỉ chọn 1 layer khi query cần nhiều layer</td>
+              </tr>
+              <tr>
+                <td><code>test_golden_set_is_twenty_cases_when_released</code></td>
+                <td>File golden có đúng 20 case G01-G20</td>
+                <td>File tồn tại + đủ 20 case có đúng ID</td>
+                <td>File chưa tồn tại → <strong>tự động skip</strong> (không fail)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- test_privacy.py -->
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          <span>📄 <code>test_privacy.py</code> — Kiểm tra Privacy & User Consent</span>
+          <span class="accordion-icon">▼</span>
+        </div>
+        <div class="accordion-content">
+          <p style="margin-bottom:14px;">Kiểm tra hệ thống bảo vệ quyền riêng tư: user phải opt-in trước khi được lưu memory, thông tin nhạy cảm phải được ẩn, và user lạ phải bị từ chối.</p>
+
+          <div class="code-box">
+            <div class="code-box-header"><span>test_privacy.py</span></div>
+            <pre><code><span class="comment"># Test 1: User hợp lệ đã opt-in có quyền lưu memory</span>
+<span class="keyword">def</span> <span class="func">test_synthetic_users_opt_in</span>():
+    <span class="keyword">assert</span> require_memory_consent(<span class="string">"minh-lab17"</span>)[<span class="string">"memory_opt_in"</span>] <span class="keyword">is</span> <span class="keyword">True</span>
+    <span class="keyword">assert</span> can_write_type(<span class="string">"minh-lab17"</span>, <span class="string">"preference"</span>) <span class="keyword">is</span> <span class="keyword">True</span>
+
+<span class="comment"># Test 2: PII (email, số điện thoại) phải bị ẩn/xóa trước khi lưu</span>
+<span class="keyword">def</span> <span class="func">test_pii_minimizer</span>():
+    text = minimize_pii(<span class="string">"mail me at a.person@example.com or +84 912 345 678"</span>)
+    <span class="keyword">assert</span> <span class="string">"example.com"</span> <span class="keyword">not in</span> text  <span class="comment"># Email bị xóa</span>
+    <span class="keyword">assert</span> <span class="string">"912"</span> <span class="keyword">not in</span> text          <span class="comment"># Số điện thoại bị xóa</span>
+
+<span class="comment"># Test 3: User không có trong whitelist phải bị từ chối hoàn toàn</span>
+<span class="keyword">def</span> <span class="func">test_unknown_user_is_denied</span>():
+    <span class="keyword">with</span> pytest.raises(<span class="func">PermissionError</span>):
+        require_memory_consent(<span class="string">"unknown-user"</span>)  <span class="comment"># Phải ném PermissionError</span></code></pre>
+          </div>
+
+          <table class="custom-table" style="margin-top:14px;">
+            <thead><tr><th>Test</th><th>PASS khi</th><th>FAIL khi</th></tr></thead>
+            <tbody>
+              <tr><td>Opt-in check</td><td><code>minh-lab17</code> và <code>lan-lab17</code> có <code>memory_opt_in=True</code></td><td>User bị từ chối hoặc flag sai</td></tr>
+              <tr><td>PII Minimizer</td><td>Email và số điện thoại bị loại khỏi chuỗi output</td><td>PII còn sót lại trong text sau khi minimize</td></tr>
+              <tr><td>Unknown user</td><td>Hàm ném <code>PermissionError</code> với user lạ</td><td>Hàm không ném exception → lỗ hổng bảo mật</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- EVALUATION CASES -->
+      <h2 style="font-size:1.4rem; margin: 40px 0 20px;"><span class="icon">📊</span> Phần 2 — Evaluation Cases (E01-E11) — Cơ chế PASS/FAIL</h2>
+      <div class="card" style="margin-bottom:24px;">
+        <p style="color:var(--text-muted); font-size:0.93rem; margin-bottom:14px;">
+          Không dùng LLM để chấm điểm. Evaluator đọc <code>must_contain_all</code> trong file <code>data/sessions.json</code> — nếu <strong>TẤT CẢ</strong> các từ khóa đó xuất hiện trong context được truy xuất thì PASS, thiếu bất kỳ từ khóa nào thì FAIL.
+        </p>
+        <div class="code-box">
+          <div class="code-box-header"><span>Ví dụ cấu trúc 1 evaluation case trong sessions.json</span></div>
+          <pre><code>{
+  <span class="string">"id"</span>: <span class="string">"E08"</span>,
+  <span class="string">"expected_layer"</span>: <span class="string">"long_term"</span>,
+  <span class="string">"user_id"</span>: <span class="string">"minh-lab17"</span>,
+  <span class="string">"query"</span>: <span class="string">"Backend của BLUEBIRD-42 bắt buộc dùng stack gì?"</span>,
+  <span class="string">"must_contain_all"</span>: [<span class="string">"BLUEBIRD-42"</span>, <span class="string">"TypeScript"</span>, <span class="string">"NestJS"</span>],
+  <span class="comment">// Phải tìm thấy CẢ 3 từ khóa trong context được retrieve</span>
+}</code></pre>
+        </div>
+      </div>
+
+      <table class="custom-table">
+        <thead>
+          <tr><th>Case</th><th>Layer</th><th>Query</th><th>Must Contain</th><th>Nguồn dữ liệu</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="highlight-pill pill-cyan">E01</span></td><td>short_term</td><td>Tên dự án cá nhân vừa nhắc là gì?</td><td>Marker từ fixture_messages hiện tại</td><td>ShortTermMemory local</td></tr>
+          <tr><td><span class="highlight-pill pill-purple">E02</span></td><td>long_term</td><td>Ngôn ngữ ưu tiên của Minh là gì?</td><td><code>Python</code></td><td>Zep User Context Block</td></tr>
+          <tr><td><span class="highlight-pill pill-purple">E03</span></td><td>long_term</td><td>Open loop / deadline chưa xong?</td><td>Marker deadline & code task</td><td>Zep User Context Block</td></tr>
+          <tr><td><span class="highlight-pill pill-amber">E04</span></td><td>episodic</td><td>Lần trước fix async HTTP bằng cách nào?</td><td><code>ClientSession</code>, <code>ASYNC-FIX-20</code></td><td>Zep Episodes (user_id)</td></tr>
+          <tr><td><span class="highlight-pill pill-amber">E05</span></td><td>episodic</td><td>Root cause sự cố async là gì?</td><td><code>connection churn</code></td><td>Zep Episodes (user_id)</td></tr>
+          <tr><td><span class="highlight-pill pill-emerald">E06</span></td><td>semantic</td><td>Quy tắc retry POST payment?</td><td><code>PAYMENT-RULE-3</code>, <code>Idempotency-Key</code></td><td>Zep Standalone Graph</td></tr>
+          <tr><td><span style="background:rgba(217,70,239,0.15);color:#e879f9;" class="highlight-pill">E07</span></td><td>mixed</td><td>Hướng dẫn retry payment phù hợp preference Minh</td><td>Cả semantic marker + personal preference</td><td>Cả 4 layer ghép lại</td></tr>
+          <tr><td><span class="highlight-pill pill-purple">E08</span></td><td>long_term</td><td>BLUEBIRD-42 dùng stack gì?</td><td><code>BLUEBIRD-42</code>, <code>TypeScript</code>, <code>NestJS</code></td><td>Zep User Context Block (recency)</td></tr>
+          <tr><td><span class="highlight-pill pill-purple">E09</span></td><td>long_term</td><td>Lan ưu tiên stack gì cho LOTUS-88?</td><td><code>LOTUS-88</code>, <code>Java</code> + KHÔNG có <code>ORCHID-27</code></td><td>Zep User Graph (user isolation)</td></tr>
+          <tr><td><span class="highlight-pill pill-cyan">E10</span></td><td>short_term</td><td>Deadline review cũ là khi nào?</td><td><code>REVIEW-DEADLINE-1600</code>, <code>16:00</code></td><td>ShortTermMemory + Compaction</td></tr>
+          <tr><td><span class="highlight-pill pill-emerald">E11</span></td><td>semantic</td><td>Theo incident playbook, trước khi tăng timeout cần kiểm tra gì?</td><td><code>CONN-POOL-FIRST</code></td><td>Zep Standalone Graph</td></tr>
+        </tbody>
+      </table>
+
+    </div>
+
+    <!-- TAB 7: DATA INGESTION -->
+    <div id="ingest" class="section-content">
+      <h2><span class="icon">📥</span> Cách Đưa Dữ Liệu Vào Từng Loại Memory</h2>
+
+      <div class="card" style="margin-bottom:28px; border-color: rgba(99,102,241,0.3);">
+        <p style="color:var(--text-muted); font-size:0.95rem;">
+          4 tầng nhớ được <strong>nạp dữ liệu bằng các cơ chế hoàn toàn khác nhau</strong>.
+          Short-Term nạp trực tiếp từ code Python. Ba tầng còn lại đều đi qua <strong>Zep Cloud API</strong>
+          và cần chạy <code>docker compose run --rm app python -m src.seed</code> một lần trước.
+        </p>
+      </div>
+
+      <!-- SHORT TERM -->
+      <div class="card theme-short" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">💬 Short-Term Memory — Nạp trực tiếp bằng Python</span>
+          <span class="card-badge">In-Memory / Không cần Zep</span>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:14px;">
+          <strong>Ai đưa dữ liệu vào?</strong> Code Python gọi <code>memory.add(role, content)</code> mỗi khi có 1 turn chat mới.
+          Không đi qua mạng, không cần API key, lưu hoàn toàn trong RAM.
+        </p>
+        <div class="code-box">
+          <div class="code-box-header"><span>src/short_term.py — Cách nạp dữ liệu</span><span>Python local</span></div>
+          <pre><code><span class="comment"># 1. Khởi tạo bộ nhớ short-term</span>
+memory = <span class="func">ShortTermMemory</span>(
+    strategy=<span class="string">"sliding"</span>,       <span class="comment"># Chế độ: sliding window</span>
+    max_recent_messages=6,  <span class="comment"># Giữ tối đa 6 turn gần nhất</span>
+    pressure_tokens=500     <span class="comment"># Nếu vượt 500 token → compact</span>
+)
+
+<span class="comment"># 2. Thêm từng turn chat vào (tự động compact nếu quá đầy)</span>
+memory.add(<span class="string">"user"</span>, <span class="string">"Constraint: HOLD-ALPHA-0900 standup lúc 9:00"</span>)
+memory.add(<span class="string">"assistant"</span>, <span class="string">"Đã ghi nhận."</span>)
+memory.add(<span class="string">"user"</span>, <span class="string">"Filler message không quan trọng"</span>)
+<span class="comment"># ... thêm nhiều lần → khi đủ áp lực → compact() tự chạy</span>
+
+<span class="comment"># 3. Khi compact() chạy:</span>
+<span class="comment">#   - Messages cũ → extract_durable_notes() → lưu vào durable_notes</span>
+<span class="comment">#   - Constraint, deadline, must → LUÔN được giữ lại</span>
+<span class="comment">#   - Messages bình thường → bị xóa, chỉ giữ 6 cái mới nhất</span>
+
+<span class="comment"># 4. Render ra text để đưa vào context</span>
+text = memory.render()
+<span class="comment"># Output: &lt;SESSION_SUMMARY&gt;...&lt;/SESSION_SUMMARY&gt;</span>
+<span class="comment">#         &lt;DURABLE_NOTES&gt;- user: Constraint: HOLD-ALPHA-0900...&lt;/DURABLE_NOTES&gt;</span>
+<span class="comment">#         &lt;RECENT_TURNS&gt;...6 turns gần nhất...&lt;/RECENT_TURNS&gt;</span></code></pre>
+        </div>
+        <div style="margin-top:14px; padding: 12px 16px; background: rgba(6,182,212,0.08); border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
+          <strong style="color:var(--accent-cyan)">📌 Dữ liệu durable được giữ lại khi:</strong>
+          <ul style="margin:8px 0 0 18px; color:var(--text-muted); font-size:0.85rem;">
+            <li>Nội dung chứa từ: <code>constraint</code>, <code>deadline</code>, <code>decision</code>, <code>must</code>, <code>todo</code>, <code>preference</code></li>
+            <li>Hoặc có marker dạng <code>HOLD-ALPHA-0900</code> (chữ hoa, có gạch ngang, >= 6 ký tự)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- LONG TERM -->
+      <div class="card theme-long" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">👤 Long-Term Memory — Zep tự trích xuất từ lịch sử chat</span>
+          <span class="card-badge">Zep User Graph / Tự động</span>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:14px;">
+          <strong>Ai đưa dữ liệu vào?</strong> <code>src.seed</code> gửi toàn bộ lịch sử chat lên Zep → Zep <strong>tự động phân tích</strong> và trích xuất facts, preferences, open loops vào Knowledge Graph của từng user.
+        </p>
+        <div class="code-box">
+          <div class="code-box-header"><span>src/zep_common.py — Cách nạp dữ liệu vào Long-Term</span><span>Zep Cloud API</span></div>
+          <pre><code><span class="comment"># Bước 1: Tạo user trên Zep Cloud</span>
+client.user.add(
+    user_id=<span class="string">"minh-lab17"</span>,
+    first_name=<span class="string">"Minh"</span>,
+)
+
+<span class="comment"># Bước 2: Tạo thread (1 phiên chat)</span>
+client.thread.create(thread_id=<span class="string">"session-stage1"</span>, user_id=<span class="string">"minh-lab17"</span>)
+
+<span class="comment"># Bước 3: Đẩy messages vào thread</span>
+client.thread.add_messages(<span class="string">"session-stage1"</span>, messages=[
+    Message(role=<span class="string">"user"</span>, content=<span class="string">"Demo cá nhân của mình dùng Python, project ORCHID-27"</span>),
+    Message(role=<span class="string">"assistant"</span>, content=<span class="string">"Đã ghi nhận preference Python và project ORCHID-27."</span>),
+    Message(role=<span class="string">"user"</span>, content=<span class="string">"BLUEBIRD-42 bắt buộc dùng TypeScript + NestJS"</span>),
+])
+
+<span class="comment"># Zep Cloud tự động:</span>
+<span class="comment"># - Đọc các messages → dùng LLM nội bộ trích xuất facts</span>
+<span class="comment"># - Tạo Knowledge Graph cho minh-lab17:</span>
+<span class="comment">#   FACT: "Minh's personal project is ORCHID-27"</span>
+<span class="comment">#   FACT: "BLUEBIRD-42 backend must use TypeScript with NestJS"</span>
+<span class="comment">#   FACT: "Minh prioritizes Python for personal projects"</span>
+
+<span class="comment"># Truy xuất lại (trong retrieve_long_term):</span>
+context = client.thread.get_user_context(thread_id=<span class="string">"local-e08"</span>)
+<span class="comment"># → Trả về Context Block chứa facts của minh-lab17</span></code></pre>
+        </div>
+        <div style="margin-top:14px; padding: 12px 16px; background: rgba(139,92,246,0.08); border-radius: 8px; border-left: 3px solid var(--accent-purple);">
+          <strong style="color:var(--accent-purple)">📌 Dữ liệu nằm ở đâu trên Zep:</strong>
+          <p style="color:var(--text-muted); font-size:0.85rem; margin-top:6px;">Vào <strong>app.getzep.com → chọn Project → Users → minh-lab17 → Graph</strong> để thấy các Facts/Edges được trích xuất tự động từ chat history.</p>
+        </div>
+      </div>
+
+      <!-- EPISODIC -->
+      <div class="card theme-episodic" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">📓 Episodic Memory — Zep lưu raw episodes từ chat</span>
+          <span class="card-badge">Zep User Episodes / Tự động</span>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:14px;">
+          <strong>Ai đưa dữ liệu vào?</strong> Cùng lúc với Long-Term, khi seed gửi messages lên thread của user, Zep đồng thời lưu các đoạn chat thô thành <strong>Episodes</strong> — đặc biệt là các reflection, root cause analysis, kết quả debug.
+        </p>
+        <div class="code-box">
+          <div class="code-box-header"><span>Dữ liệu episodic trong data/sessions.json (stage 2)</span><span>JSON</span></div>
+          <pre><code>{
+  <span class="string">"stage"</span>: 2,
+  <span class="string">"thread_id"</span>: <span class="string">"minh-s2-async-debug"</span>,
+  <span class="string">"messages"</span>: [
+    {<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: <span class="string">"mình fix async timeout bằng cách reuse ClientSession"</span>},
+    {<span class="string">"role"</span>: <span class="string">"assistant"</span>, <span class="string">"content"</span>: <span class="string">"ASYNC-FIX-20: root cause là connection churn..."</span>},
+  ],
+  <span class="string">"ready_probe"</span>: {  <span class="comment">// Chờ Zep index xong trước khi tiếp tục</span>
+    <span class="string">"query"</span>: <span class="string">"async fix ClientSession ASYNC-FIX-20"</span>,
+    <span class="string">"must_contain"</span>: <span class="string">"ASYNC-FIX-20"</span>
+  }
+}
+
+<span class="comment">// seed.py gọi:</span>
+<span class="func">ingest_user_stage</span>(client, user, stage=2)
+<span class="comment">// → recreate_thread() → add_messages() → wait_for_search()</span>
+<span class="comment">// Zep lưu messages thô thành episodes để search sau này</span></code></pre>
+        </div>
+        <div style="margin-top:14px; padding: 12px 16px; background: rgba(245,158,11,0.08); border-radius: 8px; border-left: 3px solid var(--accent-amber);">
+          <strong style="color:var(--accent-amber)">📌 Sự khác biệt Long-Term vs Episodic:</strong>
+          <ul style="margin:8px 0 0 18px; color:var(--text-muted); font-size:0.85rem;">
+            <li><strong>Long-Term</strong>: Zep trích xuất <em>facts ngắn gọn</em> từ chat ("Minh likes Python")</li>
+            <li><strong>Episodic</strong>: Zep lưu <em>đoạn chat thô</em> để tìm kiếm lại bằng vector search ("mình đã làm gì trong buổi debug async")</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- SEMANTIC -->
+      <div class="card theme-semantic" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">🧠 Semantic Memory — Nạp tài liệu kỹ thuật thủ công</span>
+          <span class="card-badge">Zep Standalone Graph / Thủ công</span>
+        </div>
+        <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:14px;">
+          <strong>Ai đưa dữ liệu vào?</strong> <code>src.seed</code> đọc file <code>data/knowledge.jsonl</code> và <strong>thủ công</strong> gửi từng tài liệu JSON/text lên Standalone Graph dùng chung (không gắn với user cụ thể nào).
+        </p>
+        <div class="code-box">
+          <div class="code-box-header"><span>data/knowledge.jsonl — Dữ liệu semantic domain</span><span>JSONL</span></div>
+          <pre><code><span class="comment">// Mỗi dòng là 1 document kỹ thuật:</span>
+{<span class="string">"id"</span>: <span class="string">"kb-payment-retry"</span>, <span class="string">"entity"</span>: <span class="string">"PaymentRetryPolicy"</span>,
+ <span class="string">"summary"</span>: <span class="string">"Retry POST /payments max 3 times with exponential backoff.
+  Use Idempotency-Key header. Marker: PAYMENT-RULE-3."</span>}
+
+{<span class="string">"id"</span>: <span class="string">"kb-context-budget"</span>, <span class="string">"entity"</span>: <span class="string">"Memory Context Budget"</span>,
+ <span class="string">"summary"</span>: <span class="string">"short-term 10%, long-term 4%, episodic 3%, semantic 3%.
+  Marker: BUDGET-10-4-3-3."</span>}
+
+<span class="comment">// seed.py nạp vào Zep:</span>
+<span class="func">ensure_semantic_graph</span>(client, graph_id=<span class="string">"lab17-semantic"</span>, reset=<span class="keyword">True</span>)
+<span class="func">add_semantic_documents</span>(client, graph_id=<span class="string">"lab17-semantic"</span>, docs=knowledge)
+<span class="comment">// → Với mỗi doc: client.graph.add(type="json", data=...) + client.graph.add(type="text", data=...)</span>
+<span class="comment">// → Zep index thành vector embeddings để search bằng semantic similarity</span>
+
+<span class="comment">// Truy xuất trong retrieve_semantic:</span>
+client.graph.search(
+    graph_id=<span class="string">"lab17-semantic"</span>,
+    query=<span class="string">"retry payment policy"</span>,
+    scope=<span class="string">"episodes"</span>,
+    limit=8
+)
+<span class="comment">// → Trả về documents khớp nhất → PAYMENT-RULE-3, Idempotency-Key</span></code></pre>
+        </div>
+        <div style="margin-top:14px; padding: 12px 16px; background: rgba(16,185,129,0.08); border-radius: 8px; border-left: 3px solid var(--accent-emerald);">
+          <strong style="color:var(--accent-emerald)">📌 Semantic khác với Episodic ở đây:</strong>
+          <ul style="margin:8px 0 0 18px; color:var(--text-muted); font-size:0.85rem;">
+            <li><strong>Semantic</strong>: <em>Dùng chung</em> cho tất cả user, lưu trong <strong>Standalone Graph</strong> (knowledge.jsonl)</li>
+            <li><strong>Episodic</strong>: <em>Riêng từng user</em>, lưu trong <strong>User Graph</strong> (sessions.json)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- SUMMARY TABLE -->
+      <h2 style="font-size:1.3rem; margin: 32px 0 16px;"><span class="icon">📊</span> Bảng Tổng Hợp — So Sánh Cách Nạp Dữ Liệu</h2>
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Tầng Nhớ</th>
+            <th>File nguồn</th>
+            <th>Công cụ nạp</th>
+            <th>Nơi lưu</th>
+            <th>Ai kích hoạt?</th>
+            <th>Thời điểm nạp</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="highlight-pill pill-cyan">Short-Term</span></td>
+            <td><code>fixture_messages</code> trong sessions.json</td>
+            <td><code>memory.add(role, content)</code></td>
+            <td>RAM (Python object)</td>
+            <td>Evaluator tự gọi mỗi lần test</td>
+            <td>Tại thời điểm chạy evaluate</td>
+          </tr>
+          <tr>
+            <td><span class="highlight-pill pill-purple">Long-Term</span></td>
+            <td><code>data/sessions.json</code> (messages)</td>
+            <td><code>client.thread.add_messages()</code></td>
+            <td>Zep Cloud — User Knowledge Graph</td>
+            <td><code>src.seed</code> (chạy 1 lần)</td>
+            <td>Trước khi evaluate</td>
+          </tr>
+          <tr>
+            <td><span class="highlight-pill pill-amber">Episodic</span></td>
+            <td><code>data/sessions.json</code> (messages)</td>
+            <td><code>client.thread.add_messages()</code></td>
+            <td>Zep Cloud — User Episodes (raw chat)</td>
+            <td><code>src.seed</code> (chạy 1 lần)</td>
+            <td>Trước khi evaluate</td>
+          </tr>
+          <tr>
+            <td><span class="highlight-pill pill-emerald">Semantic</span></td>
+            <td><code>data/knowledge.jsonl</code></td>
+            <td><code>client.graph.add(type="json")</code></td>
+            <td>Zep Cloud — Standalone Graph</td>
+            <td><code>src.seed</code> (chạy 1 lần)</td>
+            <td>Trước khi evaluate</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- FLOW -->
+      <h2 style="font-size:1.3rem; margin: 32px 0 16px;"><span class="icon">🔄</span> Luồng Seed → Evaluate</h2>
+      <div class="code-box">
+        <div class="code-box-header"><span>Thứ tự các bước chạy lab</span></div>
+        <pre><code><span class="comment"># ① Build image (chỉ cần 1 lần)</span>
+docker compose build
+
+<span class="comment"># ② Khởi động Redis + Qdrant</span>
+docker compose up -d redis qdrant
+
+<span class="comment"># ③ Nạp dữ liệu vào Zep Cloud (Long-Term + Episodic + Semantic)</span>
+docker compose run --rm app python -m src.seed
+<span class="comment">#    └→ ensure_user(minh-lab17, lan-lab17)</span>
+<span class="comment">#    └→ ensure_semantic_graph() + add_semantic_documents(knowledge.jsonl)</span>
+<span class="comment">#    └→ ingest_user_stage(stage=1,2,3) → add_messages() cho từng session</span>
+<span class="comment">#    └→ wait_for_search() → polling đến khi Zep index xong</span>
+
+<span class="comment"># ④ Chạy evaluate (Short-Term nạp tự động trong này)</span>
+docker compose run --rm app python -m src.evaluate --impl student --reuse-seeded
+<span class="comment">#    └→ Với mỗi case (E01-E11):</span>
+<span class="comment">#       - Nạp fixture_messages vào ShortTermMemory.add() → Short-Term sẵn sàng</span>
+<span class="comment">#       - prime_eval_thread() → Zep biết ngữ cảnh query hiện tại</span>
+<span class="comment">#       - Router quyết định layer(s)</span>
+<span class="comment">#       - Gọi retrieve_long_term / retrieve_episodic / retrieve_semantic</span>
+<span class="comment">#       - assemble_context() ghép 4 layer theo budget 10/4/3/3</span>
+<span class="comment">#       - Kiểm tra must_contain_all → PASS/FAIL</span></code></pre>
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+      <p>Lab 17 - Multi-Memory Agent with Zep Cloud & LangGraph • VinUni Codelab 2026</p>
+    </footer>
+
+  </div>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.section-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    function toggleAccordion(headerEl) {
+      const item = headerEl.parentElement;
+      item.classList.toggle('open');
+    }
+  </script>
+</body>
+</html>
